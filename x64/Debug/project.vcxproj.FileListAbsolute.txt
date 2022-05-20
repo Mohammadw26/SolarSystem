@@ -1,0 +1,2 @@
+C:\Users\moham\Downloads\SolarSystem3\SolarSystem\x64\Debug\project.exe
+C:\Users\moham\source\repos\Solar_System\x64\Debug\project.exe
