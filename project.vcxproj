@@ -81,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="body.h" />
+    <ClInclude Include="dvec3.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="object.h" />
     <ClInclude Include="shaders.h" />

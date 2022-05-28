@@ -5,14 +5,14 @@ unsigned int loadTexture(const char* filename)
 	int width, height;
 	stbi_set_flip_vertically_on_load(1);
 	unsigned char* data = stbi_load(filename, &width, &height, NULL, 3);
-	if(!data)
+	if (!data)
 	{
 		// try parent folder
 		std::string parent = filename;
 		parent = "../../" + parent;
 		data = stbi_load(parent.c_str(), &width, &height, NULL, 3);
 	}
-	if(!data)
+	if (!data)
 	{
 		// print error message
 		std::cout << "Error loading texture: " << filename << std::endl;
