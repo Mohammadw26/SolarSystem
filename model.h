@@ -1,9 +1,3 @@
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/cimport.h>
-#include "GLFW/glfw3.h"
-#include <iostream>
-
 
 class Model
 {
@@ -85,13 +79,15 @@ public:
 		numVertices = (int)vertices.size();
 	}
 
-	void draw(GLuint program, vec3 position, float radius, unsigned int texture)
+	void draw(GLuint program, dvec3 position, double radius, double tilt, double rotAngle, unsigned int texture)
 	{
-		// set position and size in model matrix
+		// set position, rotation, and size in model matrix
 		mat4x4 modelMatrix;
 		mat4x4_identity(modelMatrix);
-		mat4x4_translate_in_place(modelMatrix, position[0], position[1], position[2]);
-		mat4x4_scale_aniso(modelMatrix, modelMatrix, radius * 2, radius * 2, radius * 2);
+		mat4x4_translate_in_place(modelMatrix, (float)position.x, (float)position.y, (float)position.z);
+		mat4x4_rotate_Z(modelMatrix, modelMatrix, (float)tilt);
+		mat4x4_rotate_Y(modelMatrix, modelMatrix, (float)rotAngle);
+		mat4x4_scale_aniso(modelMatrix, modelMatrix, (float)radius * 2, (float)radius * 2, (float)radius * 2);
 		glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (const GLfloat*)modelMatrix);
 
 		// draw textured 3D model
@@ -103,9 +99,10 @@ public:
 
 	void drawSkybox(GLuint program, unsigned int textures[6])
 	{
-		// set default model matrix
+		// set size in model matrix
 		mat4x4 modelMatrix;
 		mat4x4_identity(modelMatrix);
+		mat4x4_scale_aniso(modelMatrix, modelMatrix, 1e10, 1e10, 1e10);
 		glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (const GLfloat*)modelMatrix);
 
 		// draw skybox sides using different textures without depth testing

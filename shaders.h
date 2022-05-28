@@ -32,7 +32,7 @@ GLuint createShader(GLenum type, const char* source)
 	// check for complilation errors
 	int result;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &result);
-	if(result != GL_TRUE)
+	if (result != GL_TRUE)
 	{
 		// error message length
 		int length;
