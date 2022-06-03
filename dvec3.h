@@ -56,6 +56,13 @@ public:
 	double x, y, z;
 };
 
+dvec3 normalize(const dvec3& other)
+{
+	dvec3 result = other;
+	result.normalize();
+	return result;
+}
+
 void lookAt(mat4x4 m, dvec3 e, dvec3 c, dvec3 u)
 {
 	// convert dvec3 to vec3

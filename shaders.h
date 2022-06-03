@@ -4,11 +4,16 @@ const char* vertex_source =
 "#version 110\n"
 "uniform mat4 projMatrix, viewMatrix, modelMatrix;\n"
 "attribute vec3 vPos;\n"
+"attribute vec3 vNormal;\n"
 "attribute vec2 vUV;\n"
+"varying vec3 Position;\n"
+"varying vec3 Normal;\n"
 "varying vec2 UV;\n"
 "void main()\n"
 "{\n"
 "	gl_Position = projMatrix * viewMatrix * modelMatrix * vec4(vPos, 1.0);\n"
+"	Position = (modelMatrix * vec4(vPos, 1.0)).xyz;\n"
+"	Normal = (modelMatrix * vec4(vNormal, 0.0)).xyz;\n"
 "	UV = vUV;\n"
 "}\n";
 
@@ -16,10 +21,23 @@ const char* vertex_source =
 const char* fragment_source =
 "#version 110\n"
 "uniform sampler2D tex;\n"
+"uniform bool useLighting;\n"
+"uniform vec3 sunPosition;\n"
+"varying vec3 Position;\n"
+"varying vec3 Normal;\n"
 "varying vec2 UV;\n"
 "void main()\n"
 "{\n"
 "	gl_FragColor = texture2D(tex, UV);\n"
+"	if(useLighting)\n"
+"	{\n"
+"		vec3 normal = normalize(Normal);\n"
+"		vec3 sunDirection = normalize(sunPosition - Position);\n"
+"		float ambient = 0.3;\n"
+"		float diffuse = max(dot(sunDirection, normal), 0.0);\n"
+"		float light = ambient + diffuse;\n"
+"		gl_FragColor.rgb *= light;\n"
+"	}\n"
 "}\n";
 
 GLuint createShader(GLenum type, const char* source)

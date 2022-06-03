@@ -2,9 +2,10 @@
 class Body
 {
 public:
-	Body(double distance, double speed, double radius_, double mass_, double tilt_, double rotSpeed_, unsigned int texture_)
+	Body(std::string name_, double distance, double speed, double radius_, double mass_, double tilt_, double rotSpeed_, bool moonOption_, unsigned int texture_)
 	{
 		// initialize parameters
+		name = name_;
 		position = dvec3(0, 0, distance);
 		velocity = dvec3(speed, 0, 0);
 		radius = radius_;
@@ -13,6 +14,8 @@ public:
 		rotAngle = 0;
 		rotSpeed = rotSpeed_;
 		texture = texture_;
+		visible = true;
+		moonOption = moonOption_;
 	}
 
 	dvec3 calcForce(Body& other)
@@ -39,8 +42,11 @@ public:
 		rotAngle += rotSpeed * timeStep;
 	}
 
+	std::string name;
 	dvec3 position, velocity;        // orbital properties
 	double radius, mass;             // physical properties
 	double tilt, rotAngle, rotSpeed; // spinning properties
 	unsigned int texture;            // texture ID
+	bool visible;
+	bool moonOption;                 // moon can be added
 };

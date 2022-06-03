@@ -24,9 +24,10 @@ public:
 		struct Vertex
 		{
 			float x, y, z;
+			float nx, ny, nz;
 			float u, v;
 
-			Vertex(float x_, float y_, float z_, float u_, float v_) : x(x_), y(y_), z(z_), u(u_), v(v_)
+			Vertex(float x_, float y_, float z_, float nx_, float ny_, float nz_, float u_, float v_) : x(x_), y(y_), z(z_), nx(nx_), ny(ny_), nz(nz_), u(u_), v(v_)
 			{
 			}
 		};
@@ -48,10 +49,11 @@ public:
 					// get position and texture coordinate
 					int index = face->mIndices[i];
 					aiVector3D pos = mesh->mVertices[index];
+					aiVector3D normal = mesh->mNormals[index];
 					aiVector3D uv = mesh->mTextureCoords[0][index];
 
 					// add vertex to array
-					Vertex vertex(pos.x, pos.y, pos.z, uv.x, uv.y);
+					Vertex vertex(pos.x, pos.y, pos.z, normal.x, normal.y, normal.z, uv.x, uv.y);
 					vertices.push_back(vertex);
 				}
 			}
@@ -69,11 +71,14 @@ public:
 
 		// enable vertex attributes
 		GLint vPos_location = glGetAttribLocation(program, "vPos");
+		GLint vNormal_location = glGetAttribLocation(program, "vNormal");
 		GLint vUV_location = glGetAttribLocation(program, "vUV");
 		glEnableVertexAttribArray(vPos_location);
 		glVertexAttribPointer(vPos_location, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+		glEnableVertexAttribArray(vNormal_location);
+		glVertexAttribPointer(vNormal_location, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 3));
 		glEnableVertexAttribArray(vUV_location);
-		glVertexAttribPointer(vUV_location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 3));
+		glVertexAttribPointer(vUV_location, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float) * 6));
 
 		// store number of vertices
 		numVertices = (int)vertices.size();
