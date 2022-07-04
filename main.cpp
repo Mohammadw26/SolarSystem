@@ -19,6 +19,7 @@
 #include "shaders.h"
 #include "model.h"
 #include "body.h"
+#include "camera.h"
 
 // textures
 unsigned int skyboxTextures[6];
@@ -30,13 +31,16 @@ Model cube, sphere, ring;
 
 // Solar system
 std::vector<Body> bodies;
+const int inner = -1;
+const int outer = -2;
 
 // current state
+bool paused = false;
 int bodySelection = 0;
-int enlargement = 30;
-bool dragging = false;
-double cursorX = 0, cursorY = 0;
-double cameraAngleX = -0.8, cameraAngleY = -0.2;
+int sunScale = 30;
+int bodyScale = 1000;
+int moonOrbitScale = 80;
+Camera camera;
 
 void error_callback(int error, const char* description)
 {
@@ -45,6 +49,8 @@ void error_callback(int error, const char* description)
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	camera.keyPress(key, action);
+
 	// exit on Escape
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -57,16 +63,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	if (io.WantCaptureMouse)
 		return;
 
-	// enable dragging on left button click
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-	{
-		dragging = true;
-		glfwGetCursorPos(window, &cursorX, &cursorY);
-	}
-
-	// disable dragging on left button release
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-		dragging = false;
+	camera.mouseClick(window, button, action);
 }
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
@@ -76,21 +73,7 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 	if (io.WantCaptureMouse)
 		return;
 
-	// cursor dragging
-	if (dragging)
-	{
-		// update camera angles
-		cameraAngleX -= (xpos - cursorX) * 0.01;
-		cameraAngleY -= (ypos - cursorY) * 0.01;
-		cursorX = xpos;
-		cursorY = ypos;
-
-		// constrain vertical camera angle
-		if (cameraAngleY < -1)
-			cameraAngleY = -1;
-		if (cameraAngleY > 1)
-			cameraAngleY = 1;
-	}
+	camera.mouseMove(xpos, ypos);
 }
 
 void createBodies()
@@ -131,13 +114,75 @@ void updateBodies(double timeStep)
 				if (j == i)
 					continue;
 
-				// gravitational force from other body
+				// gravitational force from the other body
 				totalForce += bodies[i].calcForce(bodies[j]);
 			}
 
 			// update velocity and position of this body
 			bodies[i].update(totalForce, timeStep);
 		}
+	}
+}
+
+double bodyRadius(int i)
+{
+	Body& body = bodies[i];
+	return body.radius * (i == 0 ? sunScale : bodyScale);
+}
+
+dvec3 bodyPosition(int i)
+{
+	Body& body = bodies[i];
+	dvec3 position = body.position;
+
+	// for moons, scale their orbit to improve visibilty
+	if (body.texture == moonTexture)
+	{
+		// host planet is the previous body
+		Body& planet = bodies[i - 1];
+		position = planet.position + (position - planet.position) * moonOrbitScale;
+	}
+
+	return position;
+}
+
+void setCamera()
+{
+	Body& sun = bodies[0];
+
+	if (bodySelection == inner)
+	{
+		// focus on inner planets
+		double cameraDistance = 5e11;
+		dvec3 cameraDirection = normalize(dvec3(0, 1, 1));
+		double cameraSpeed = 1e11;
+		camera.set(sun.position, cameraDirection, cameraDistance, cameraSpeed);
+	}
+	else if (bodySelection == outer)
+	{
+		// focus on outer planets
+		double cameraDistance = 1e13;
+		dvec3 cameraDirection = normalize(dvec3(0, 1, 1));
+		double cameraSpeed = 1e12;
+		camera.set(sun.position, cameraDirection, cameraDistance, cameraSpeed);
+	}
+	else
+	{
+		// camera distance is roughly proportional to selected body radius
+		Body& body = bodies[bodySelection];
+		dvec3 position = bodyPosition(bodySelection);
+		double cameraDistance = bodySelection == 0 ? 8e10 : 4e7 * sqrt(body.radius);
+
+		// camera direction is back and above
+		dvec3 cameraDirection = normalize(dvec3(0, 0, 1));
+		if (bodySelection != 0)
+			cameraDirection = normalize(position - sun.position);
+		cameraDirection.rotate(0.8, dvec3(0, 1, 0));
+		cameraDirection.y = 0.5;
+
+		// focus on the selected body
+		double cameraSpeed = 1e11;
+		camera.set(position, cameraDirection, cameraDistance, cameraSpeed);
 	}
 }
 
@@ -148,7 +193,7 @@ void addMoon()
 	std::string name = planet.name + " moon";
 
 	// create new moon
-	double radius = planet.radius * 0.4;
+	double radius = planet.radius * 0.3;
 	double mass = planet.mass * 0.001;
 	Body newMoon(name, 0, 0, radius, mass, 0.5, 1e-5, false, moonTexture);
 
@@ -157,7 +202,7 @@ void addMoon()
 	dvec3 direction = normalize(planet.position - sun.position);
 
 	// new moon position
-	double distance = planet.radius * 100;
+	double distance = planet.radius * 40;
 	newMoon.position = planet.position + direction * distance;
 
 	// new moon velocity required for circular motion around planet
@@ -178,35 +223,63 @@ void drawGui()
 	ImGui::NewFrame();
 
 	// create ImGui window
-	ImGui::Begin("Bodies", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Begin("Solar system", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 
-	// create enlargement slider
-	ImGui::SliderInt("enlargement", &enlargement, 1, 30);
+	// create button for pausing/resuming
+	if (ImGui::Button(paused ? "resume" : "pause"))
+		paused = !paused;
 
-	// create body checkboxes and buttons
+	// create scale sliders
+	ImGui::SliderInt("Sun scale", &sunScale, 1, 50);
+	ImGui::SliderInt("Body scale", &bodyScale, 1, 1000);
+	ImGui::SliderInt("Moon orbit scale", &moonOrbitScale, 1, 100);
+
+	// create checkboxes and buttons for each body
 	for (int i = 0; i < bodies.size(); i++)
 	{
+		Body& body = bodies[i];
+
+		// create buttons for inner planets
+		if (body.name == "Mercury" && ImGui::Button("Inner planets"))
+		{
+			bodySelection = inner;
+			setCamera();
+		}
+
+		// create buttons for outer planets
+		if (body.name == "Jupiter" && ImGui::Button("Outer planets"))
+		{
+			bodySelection = outer;
+			setCamera();
+		}
+
 		// create checkbox for body visibility
-		ImGui::Checkbox(("##" + bodies[i].name).c_str(), &bodies[i].visible);
+		ImGui::Checkbox(("##" + body.name).c_str(), &body.visible);
 		ImGui::SameLine();
 
 		// create button for body focusing
-		if (ImGui::Button(bodies[i].name.c_str()))
+		if (ImGui::Button(body.name.c_str()))
+		{
 			bodySelection = i;
+			setCamera();
+		}
 	}
 
-	// create properties label
-	ImGui::Separator();
-	ImGui::Text("%s properties:", bodies[bodySelection].name.c_str());
+	if (bodySelection >= 0)
+	{
+		// create properties label
+		ImGui::Separator();
+		ImGui::Text("%s properties:", bodies[bodySelection].name.c_str());
 
-	// create mass and spin input fields
-	ImGui::InputDouble("mass (kg)", &bodies[bodySelection].mass, 0.0, 0.0, "%e", ImGuiInputTextFlags_EnterReturnsTrue);
-	ImGui::InputDouble("spin (rad/s)", &bodies[bodySelection].rotSpeed, 0.0, 0.0, "%e", ImGuiInputTextFlags_EnterReturnsTrue);
+		// create mass and spin input fields
+		ImGui::InputDouble("mass (kg)", &bodies[bodySelection].mass, 0.0, 0.0, "%e", ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::InputDouble("spin (rad/s)", &bodies[bodySelection].rotSpeed, 0.0, 0.0, "%e", ImGuiInputTextFlags_EnterReturnsTrue);
 
-	// create button for adding moon
-	if (bodies[bodySelection].moonOption)
-		if (ImGui::Button("add moon"))
-			addMoon();
+		// create button for adding moon
+		if (bodies[bodySelection].moonOption)
+			if (ImGui::Button("add moon"))
+				addMoon();
+	}
 
 	// draw ImGui window
 	ImGui::End();
@@ -280,6 +353,7 @@ int main(void)
 
 	// select Earth by default
 	bodySelection = 3;
+	setCamera();
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -290,7 +364,8 @@ int main(void)
 		time = newTime;
 
 		// update velocities and positions of all bodies
-		updateBodies(timeStep);
+		if (!paused)
+			updateBodies(timeStep);
 
 		// clear window
 		int width, height;
@@ -304,19 +379,10 @@ int main(void)
 		mat4x4_perspective(projMatrix, 1.0f, ratio, 1e8f, 1e13f);
 		glUniformMatrix4fv(glGetUniformLocation(program, "projMatrix"), 1, GL_FALSE, (const GLfloat*)projMatrix);
 
-		// camera rotation using cursor dragging
-		dvec3 cameraDirection;
-		cameraDirection.x = cos(cameraAngleY) * sin(cameraAngleX);
-		cameraDirection.y = -sin(cameraAngleY);
-		cameraDirection.z = cos(cameraAngleY) * cos(cameraAngleX);
-
-		// camera distance is roughly proportional to selected body radius
-		double cameraDistance = 1.2e6 * sqrt(bodies[bodySelection].radius);
-		dvec3 cameraPosition = bodies[bodySelection].position + cameraDirection * cameraDistance;
-
-		// set view matrix with camera focused on selected body
+		// set view matrix
+		camera.update(timeStep);
 		mat4x4 viewMatrix;
-		lookAt(viewMatrix, cameraPosition, bodies[bodySelection].position, dvec3(0, 1, 0));
+		camera.GetViewMatrix(viewMatrix);
 
 		// for skybox, reset position column in view matrix
 		mat4x4 skyboxViewMatrix;
@@ -338,13 +404,13 @@ int main(void)
 		for (int i = 0; i < bodies.size(); i++)
 		{
 			// ignore hidden bodies
-			if (!bodies[i].visible)
+			Body& body = bodies[i];
+			if (!body.visible)
 				continue;
 
-			// draw a sphere with enlarged radius to improve visibilty
-			glUniform1i(glGetUniformLocation(program, "useLighting"), bodies[i].name != "Sun");
-			double radius = bodies[i].radius * enlargement;
-			sphere.draw(program, bodies[i].position, radius, bodies[i].tilt, bodies[i].rotAngle, bodies[i].texture);
+			// draw a sphere
+			glUniform1i(glGetUniformLocation(program, "useLighting"), body.name != "Sun");
+			sphere.draw(program, bodyPosition(i), bodyRadius(i), body.tilt, body.rotAngle, body.texture);
 		}
 
 		// draw a ring for Saturn
@@ -356,8 +422,7 @@ int main(void)
 				glUniform1i(glGetUniformLocation(program, "useLighting"), 0);
 				glEnable(GL_BLEND);
 				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-				double radius = bodies[i].radius * enlargement;
-				ring.draw(program, bodies[i].position, radius, bodies[i].tilt, 0, ringTexture);
+				ring.draw(program, bodyPosition(i), bodyRadius(i), bodies[i].tilt, 0, ringTexture);
 				glDisable(GL_BLEND);
 			}
 		}
