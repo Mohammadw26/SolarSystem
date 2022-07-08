@@ -1,1 +1,85 @@
+Demo: https://www.youtube.com/watch?v=o7K1cEGcqCc
+navigation using camera drag and moving arrows (->, <-, upward and downward)
+
+==========WEEK1=============
+* Spent 1 hour studying material on shadow mapping in opengl. 
+* Spent another 3 hours setting up a basic demo
+*spent 4 hours studying math  (Vectors , Matrices ..)
+* total : 8 hours 
+======= WEEK 2 ===============
+* spent 2 hours installing GLM and stb-images and displaying shapes
+*spent 3 hour studying shaders and transformations 
+*spent 2 hour studying  3D with Coordinate Systems 
+*spent 2 hour studying camera class and trying to do it
+* total : 9 hours 
+=======WEEK 3 =============
+*spent 4 hours studying about Cleanup and Organization (include (Texture, Model, Mesh classes ) 
+* spent 5 hours studying about   Lighting
+*total : 9 hours 
+=======WEEK 4 ============
+* spent 2 hours isntalling CMake/ASSIMP  and  Object Loading
+* spent 2 hours studying Physics 
+* total : 4 hours
+========== WEEK 5 ==========
+* started repo making minimal Glad/GLFW example code with a rotating triangle to establish the working setup.
+* adding a skybox with 6 textures for each side of the sky cube, images are taking from: https://opengameart.org/content/ulukais-space-skyboxes
+* total : 8 hours
+========== WEEK 6 ==========
+* adding model loading using Assimp library, as initial step the planets are without motion and rotations.
+textures are taken from: https://www.solarsystemscope.com/textures/
+* total : 6 hours
+
+========== WEEK 7 ==========
+* adding rotations and motion to the planets using Newtonian gravity.
+- Scaling:The system is not to scale because actual planet sizes are much smaller than distances - with entire solar system
+on the screen, planets would be less than a pixel wide. Therefore, fake sizes are used, but simulation is still correct
+- Orbits: For simulation to produce reasonable orbits, the program calculates initial velocities required for circular motion.
+They are derived by considering gravity as a centripetal force 
+- Stability: Since planets are very close together in this toy model,they can perturb and even deorbit each other.
+This doesn't correspond to reality due to fake sizes,but should be ok for an experimental playground
+
+--> problem faced: the earth's moon would sometimes separate from earth and fly to somewhere undefined, 
+in other runs it would attach to sun, and creates its own orbit around it.
+
+* total : 14 hours
+
+========== WEEK 8 ==========
+* solving the problem from previous week: 
+for solving the problem we used actual disctances, masses and speeds which correspond to reality which made the simulation stable.
+with actual disctances, planets are too small in comparison so their sizes are exaggerated to improve stability. Further exaggeration is hardly possible as this
+would result in the Moon being inside the Earth, etc...
+To support astonomically huge values and high precision,double type is used instead of float for simulation.
+Also, 3D vector with double components is added (dvec3) instead of one with float components (vec3)
+
+* we will implement the camera class later on... meanwhile the camera focuses on the Earth.
+
+* total : 16 hours
+
+========== WEEK 9 ==========
+* adding ImGui to the project with the given functionality: 
+- Adjust enlargement of planet sizes.
+- hide/show planets
+- focus on planets 
+- edit mass and spin of each planet
+
+--> problems faced: - when enlarging planets a collision may occure. 
+		        - when focusing on planet x, to the observer it looks like the planet x is motionless while the other planets moving in their orbits.
+
+* total : 10 hours
+
+========== WEEK 10 ==========
+* adding a button for adding a moon for each planet separetley.
+* light shading 
+* camera class (rotation using mouse dragging and navagation using arrow keys (-> , <-, upwards key and downwards key).
+* adding resume/pause button for pausing the simulation or keeping it.
+
+* total : 9 hours
+
+========== WEEK 11  ==========
+*finishing up the project, changing the scaling of planets for easier navagation and shorter time to reach planets.. 
+Sun size increased by 50 times, and other planets by 1000 times with appropriate distances.
+
+* total : 8 hours
+
+
 
