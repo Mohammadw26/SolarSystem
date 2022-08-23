@@ -1,3 +1,134 @@
+===== Report	P.S: Hours are in the end of the file   ======
+The goal of this project is to create an application to simulate and visualize the model of the Solar
+System. The physical features are: setting up and solving the many-body problem using numerical
+methods. The visual features are: spherical bodies shaded by the Sun as a lightning source and a
+skybox for the background. The interactive features are: camera navigation using key and mouse
+controls and a GUI interface for pausing simulation, selecting different views, showing/hiding
+bodies, changing body properties, and adding new moons to planets.
+
+Overview
+
+3D vector class
+Positions, directions, and velocities of 3D objects are represented using vectors. The corresponding
+class, implemented in dvec3.h, defines basic arithmetic operations as well as other scalar and vector
+methods. Some functions are adapted from linmath.h, supplied with the Graphics Library
+Framework (GLFW).
+
+Body class
+An astronomical body, implemented in body.h, contains orbital properties (position and velocity),
+physical properties (radius and mass), spinning properties (rotational angles and speed), a texture
+identifier, and GUI options for its visibility and moon adding.
+The bodies are able to initialize their parameters, calculate gravitational forces from other bodies,
+and update their velocities, positions, and rotational angles on each time step.
+
+Camera class
+The program supports navigation using key and mouse controls using the camera class,
+implemented in camera.h. It contains its position and speed, direction vectors with moving and
+mouse states.
+
+The camera can set its location, handle key and mouse events, update its state on each time step, and
+set a view matrix for rendering.
+
+Model class
+The program supports 3D models, loaded from .obj files. A cube model is used for skybox
+rendering. Sphere and ring models are used for astronomical bodies.
+The model class is implemented in model.h. It loads files using the Open Asset Import Library
+(Assimp), creates vertex array and buffer objects, and enables the required vertex attributes. During
+drawing, each model can he rendered as a regular shape or as a special shape for skybox.
+
+Textures
+All objects are textured using corresponding textures for each astronomical body. The function for
+texture loading is implemented in texture.h using the STB image loading library. It accepts a file
+name for PNG or JPEG images, creates a new texture with appropriate texture parameters for
+filtering and wrapping, and returns a unique texture identifier for later usage.
+
+Shaders
+Planets and moons are shaded by the Sun as a lightning source. This is done using vertex and
+fragment shaders, implemented in shaders.h. The code is written by extending examples, supplied
+with the Graphics Library Framework (GLFW).
+The diffuse lighting component uses the direction to the Sun and the normal vector to calculate the
+amount of light reaching the surface. The ambient lighting component is constant to ensure that
+unilluminated surfaces are not completely dark.
+
+GUI
+The graphical user interface is implemented by the drawGui() function in main.cpp using the ImGui
+library. The pause button is used for pausing/resuming the simulation. Scale sliders are used for
+adjusting body sizes to improve their visualization. Checkboxes and buttons for each body are used
+to show/hide and focus on them. Buttons for inner and outer planets provide a top-down overview of
+the Solar System.
+When a body is selected, a panel of its properties is opened with edit boxes for inspection or
+modification. At the end, an optional button for adding a new moon is available for planets that
+don’t have it yet.
+
+Physics simulation
+The Solar System is modeled as a many-body problem. On each simulation step, all
+bodies are updated by calculating the total gravitational force from all other bodies.
+The acceleration of the body is proportional to the force acting on it and inversely
+proportional to its mass. The state is updated using the following numerical method:
+- The velocity change is proportional to the acceleration and the time step.
+- The position change is proportional to the velocity and the time step.
+- The angle change is proportional to the rotational velocity and the time step.
+
+Challenges:
+
+Orbit stability:
+When body parameters were set arbitrarily by fitting all planets in the window, the system behavior
+was very unstable. Even with proper initial velocities, the planets started with circular or elliptic
+orbits as expected, but eventually derailed due to mutual perturbations.
+Attempts with shorter time steps for a more precise simulation didn’t help at all, so accuracy was
+definitely not an issue. As it turned out, the distances between bodies must be much larger than their
+sizes to achieve stable configurations.
+
+Solar System data:
+As arbitrary planet parameters didn’t produce stable models, it was decided to use real data. For
+consistency, the used units are meters, kilograms, seconds, and radians – to match the most
+widespread system of measurement in Physics.
+Some parameters like sizes, masses, and distances are taken directly from published orbital and
+physical characteristics. Other parameters like orbital and rotation periods are converted to regular
+and rotational velocities respectively.
+
+Floating-point overflow:
+Using real data with astronomically large values resulted in a floating-point overflow in intermediate
+calculations. This problem was solved by using floating-point numbers with double precision
+
+(double type) for simulation. For visualization, the final results are converted to single precision
+(float type) – to match the OpenGL conventions.
+
+Visualization issues:
+When rendering the real Solar System to scale, the problem is either the planets are too small or the
+orbits are too large. As the maximum distance-to-size ratio is more than a million to one, it is
+impossible to properly visualize several planets at once. The best solution is to artificially enlarge
+bodies for visualization purposes only, without affecting the physical simulation.
+It was hard to select a single enlarging factor for all bodies. Therefore, a separate factor is used for
+the Sun which is much smaller than for other bodies.
+Another problem was that moons ended up inside enlarged planets. This was solved by introducing
+yet another enlarging factor for moon orbits.
+The end result – unchanged physical simulation, drawing not to scale, but much better visualization.
+
+Camera navigation:
+Each name in the list of bodies acts as a button and can be used to focus on the corresponding body.
+To ensure a good view of the focused body, the camera is set at the distance roughly proportional to
+the selected body radius. The camera direction is opposite to the Sun direction, rotated slightly to the
+side and up to be above the orbit.
+
+Adding moons:
+When the “add moon” button is pressed for a planet without one, a new appropriately named item is
+added to the list of bodies just below that planet.
+The moon body is placed at the specific distance (proportional to the planet’s radius) from its planet,
+in the direction opposite to the Sun.
+To ensure the moon has a proper circular orbit around its planet, the initial velocity is calculated by
+equating the gravitational force to the centripetal force. This velocity is increased by the planet’s
+velocity for the planet-moon system to properly orbit the Sun.
+
+To conclude:
+The work in this project was multifaceted. The involved areas are: Mathematics (working with 3D
+vectors and matrices), Physics (gravitational simulation), programming (designing classes,
+overloading operators), and working with various libraries (OpenGL, GLFW, Assimp, STB, ImGui).
+Various challenges were encountered in the process. Many experiments have been carried out to
+find satisfactory solutions for them. As the end result looks decent with an extensive interface and
+easy navigation, the project can be considered a success.
+
+===== reporting hours =====
 Demo: https://www.youtube.com/watch?v=o7K1cEGcqCc
 navigation using camera drag and moving arrows (->, <-, upward and downward)
 
@@ -80,6 +211,4 @@ Also, 3D vector with double components is added (dvec3) instead of one with floa
 Sun size increased by 50 times, and other planets by 1000 times with appropriate distances.
 
 * total : 8 hours
-
-
 
